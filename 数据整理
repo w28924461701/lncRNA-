@@ -6,10 +6,9 @@ rt3<-rt2 %>%mutate(fustat=case_when(fustat == "Alive" ~ 0,
 
 
 
-rt4<-rt3 %>% mutate(M = replace(M, M =="", NA))  
-rt4<-rt4 %>% mutate(N = replace(N, N =="", NA))  
-rt4<-rt4 %>% mutate(T = replace(T, T =="", NA)) 
-rt4<-rt4 %>% mutate(cacer_status = replace(cacer_status, cacer_status =="", NA)) 
+rt4<-rt3 %>% mutate(M = replace(M, M =="", NA),N = replace(N, N =="", NA),
+                    T = replace(T, T =="", NA),
+                    cacer_status = replace(cacer_status, cacer_status =="", NA))  
 
 
 
@@ -18,6 +17,22 @@ for (i in c(5,7:10)){
   rt3[,i] <- as.factor(rt3[,i])
 }
 
-
+Lnct<-Lnc[,-c(2:52)]
+Lnct<- na.omit(Lnct)#删除有空值的行
+Lnct%>%filter(rowSums(Lnct[,2:490])>1)->rr
+data3 <-aggregate( .~id,data=rr, max)
+rownames(data3)<-data3$id
+data3$id<-NULL
+write.table(data3,'lncRNA.csv',quote=F, sep = "\t")
+cou<-read.table('mutCount.txt',sep = '\t',header = T,check.names = F)
 quantile(cou$Count)
-Lnct<-Lnc[,-c(1:52)]
+cou1<-cou%>%filter(Count<=26|Count>=44)
+arrange(cou1,Count)->cou1
+sum(cou1$Count<=26)
+sum(cou1$Count>=44)
+gid<-substr(cou1$id,1,16)
+
+data3[,which(substr(colnames(data3),1,16)%in%gid[1:133])]->GS
+data3[,which(substr(colnames(data3),1,16)%in%gid[134:262])]->GU
+lncRNA.mutGroup<-cbind(GS,GU)
+write.csv(lncRNA.mutGroup,'lncRNA.mutGroup.csv',quote=F)
