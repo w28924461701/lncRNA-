@@ -1,0 +1,23 @@
+library(dplyr)
+
+# 多条件语句替换
+rt3<-rt2 %>%mutate(fustat=case_when(fustat == "Alive" ~ 0,
+                               fustat == "Dead" ~ 1)) 
+
+
+
+rt4<-rt3 %>% mutate(M = replace(M, M =="", NA))  
+rt4<-rt4 %>% mutate(N = replace(N, N =="", NA))  
+rt4<-rt4 %>% mutate(T = replace(T, T =="", NA)) 
+rt4<-rt4 %>% mutate(cacer_status = replace(cacer_status, cacer_status =="", NA)) 
+
+
+
+# 批量改变字符型至factor因子
+for (i in c(5,7:10)){
+  rt3[,i] <- as.factor(rt3[,i])
+}
+
+
+quantile(cou$Count)
+Lnct<-Lnc[,-c(1:52)]
