@@ -1,0 +1,14 @@
+rt%>% mutate(agegroup=ifelse(age<60,'<60','>=60'),
+             gleason_scoregroup=case_when(gleason_score<7 ~ 'low-gsc',
+             gleason_score>=7&gleason_score<9 ~ 'med-gsc',gleason_score>=9 ~ 'high-gsc'),
+             psa_group=case_when(psa<4 ~ 'low-psa',psa>=4&psa<10 ~ 'med-psa',psa>=10 ~ 'high-psa'),
+             Tgroup=case_when(T=='T2a'~ 'T2',T=='T2b'~ 'T2',T=='T2c'~ 'T2',T=='T3a'~ 'T3',T=='T3b'~ 'T3'))->r1
+
+r2<-select(r1,-c(4,6,9,11))
+# 批量改变字符型至factor因子
+for (i in c(4:11)){
+  r2[,i] <- as.factor(r2[,i])
+}
+
+r2%>% mutate(M=case_when(M=='M1a'|M=='M1b'|M=='M1c'~ 'M1',M=='M0'~'M0'))->r3
+r3$M<-as.factor(r3$M)
