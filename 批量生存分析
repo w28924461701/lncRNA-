@@ -1,0 +1,15 @@
+library(tidyverse)
+
+sigGenes=c("futime","fustat")
+
+for(i in colnames(rt[,3:ncol(rt)])){
+  case_when(rt[,i]<=unname(quantile(rt[,i],0.25))~ 'low',  
+            rt[,i]>unname(quantile(rt[,i],0.25))|rt[,i]<unname(quantile(rt[,i],0.75))~'median',
+            rt[,i]>=unname(quantile(rt[,i],0.75))~'high')->group
+  diff=survdiff(Surv(futime, fustat) ~group,data = rt)
+  pValue=1-pchisq(diff$chisq,df=1)
+  if(pValue<0.05){
+    sigGenes=c(sigGenes,i)
+    uniSigExp1=rt[,sigGenes]
+}
+}
