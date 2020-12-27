@@ -13,3 +13,62 @@ for(i in colnames(rt[,3:ncol(rt)])){
     uniSigExp1=rt[,sigGenes]
 }
 }
+
+
+for (k in colnames(uniSigExp1[,3:ncol(uniSigExp1)])) {
+  
+     splots <- list()
+  
+  uniSigExp1[,k]<-as.factor(uniSigExp1[,k])
+  
+   fit<- survfit(Surv(futime, fustat) ~uniSigExp1[,k],data =uniSigExp1)
+
+   splots[[1]]<-ggsurvplot(fit,
+                           xlab = "Time_months",
+                           ylab="survival probability",##根据需要调整
+                           pval = T,
+                           conf.int= F,
+                           risk.table = T,
+                           legend.title = k,
+                           legend.labs = levels(uniSigExp1[[k]]),##
+                           #surv.median.line = "hv",# 中位生存
+                           palette="lancet")
+   
+   res<-arrange_ggsurvplots(splots, print = F,
+                            ncol = 1, nrow = 1, risk.table.height = 0.25)
+   ggsave(paste(k,"All_surv.pdf",sep = "_"), res,width=7,height = 6)
+}
+
+
+
+setwd('D:\\prrc\\TCGA\\GDC\\mutation\\lnc\\survival')
+library(survival)
+library(caret)
+library(glmnet)
+library(survminer)
+library(tidyverse)
+library(ggplot2)
+
+rt=read.table("expTime.txt",header=T,sep="\t",check.names=F,row.names=1)     #读取输入文件
+rt$futime=rt$futime/365
+rt<-rt[,-c(3:10)]
+rt<-na.omit(rt)
+sigGenes=c("futime","fustat")
+
+for(i in colnames(rt[,3:ncol(rt)])){
+  
+  case_when(rt[,i]<=unname(quantile(rt[,i],0.25))~ 'low',  
+            rt[,i]>unname(quantile(rt[,i],0.25))&rt[,i]<unname(quantile(rt[,i],0.75))~'median',
+            rt[,i]>=unname(quantile(rt[,i],0.75))~'high')->rt[,i]
+            rt[,i]<-as.factor(rt[,i])
+}
+
+data=rt    
+dd<-list()
+for(i in 3:ncol(data)){
+  
+  k=colnames(data[i])
+  
+  dd[[k]]<-subset(data,data[,k]=='low'|data[,k]=='high',select = c("futime","fustat",k))
+  
+}
