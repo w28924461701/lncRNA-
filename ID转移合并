@@ -1,0 +1,22 @@
+library(survival)
+library(caret)
+library(glmnet)
+library(survminer)
+library(tidyverse)
+library(ggplot2)
+setwd('D:\\prrc\\geo\\GSE116918')
+ann<-read.table('anno.txt',sep = '\t',header = T)
+rt<-read.table('matrix.txt',header = T,sep = '\t')
+r1<-rt[1:5,1:5]
+samp<-intersect(ann$ID,rt$ID_REF)
+# ann1<- ann[which(ann$ID %in% samp),]
+ann %>% filter(ID %in% samp)->ann1
+clini<-read.table('clinical.txt',sep = '\t',header = T)
+
+for(i in which(ann2$Gene.Symbol %in% '---')){
+  ann2[i,2]<-ann2[i,1]
+}
+
+for(i in which(ann2$Gene.Symbol %in% '--- /// --- /// --- /// --- /// --- /// --- /// --- /// --- /// ---')){
+  ann2[i,2]<-ann2[i,1]
+}
