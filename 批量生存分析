@@ -85,3 +85,20 @@ for (i in 1:length(R)){
                     ncol = 1, nrow = 1, risk.table.height = 0.25)
  ggsave(paste(names(R)[i],"All_surv.pdf",sep = "_"), res,width=7,height = 6)
 }
+
+单个基因
+fit<- survfit(Surv(futime, fustat) ~LINC02041,data =BB)
+
+P3=ggsurvplot(fit,font.legend= 16,font.x =  16, font.y = 16,pval.method.coord=c(2,0.5),pval.coord=c(2,0.25),
+              font.tickslab = 14,risk.table =TRUE, risk.table.y.text.col = T,conf.int = TRUE, palette = "Dark2",
+              risk.table.y.text = FALSE,risk.table.height = 0.2,pval=TRUE,pval.method = TRUE,
+              pval.method.size = 4,log.rank.weights = "survdiff",legend.title = "LINC02041",
+              legend.labs =  c("High ", "low "),xlab ="Time(years)",break.x.by=2,xlim=c(1,10),
+              ylab="surival probability",censor.shape="|", censor.size = 2,ggtheme = theme_light(), 
+              title = "TCGA prcc OS")
+
+P3$table <- P3$table + theme(axis.line = element_blank())
+
+ggarrange(P3$plot+theme(plot.title = element_text(hjust = 0.5)),P3$table, heights = c(2, 0.7),
+          ncol = 1, nrow =2) # 标题居中
+  
