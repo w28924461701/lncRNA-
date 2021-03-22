@@ -1,0 +1,20 @@
+
+  
+  cox=coxph(Surv(futime, fustat)~.,data =rt)
+  multiCox =cox
+ 
+  multiCox <- step(multiCox,direction ="both")
+  
+  multiCoxSum <- summary(multiCox)
+  out_multi <- data.frame()
+  out_multi <- cbind(
+    coef=multiCoxSum$coefficients[,"coef"],
+    HR=multiCoxSum$conf.int[,"exp(coef)"],
+    HR.95L=multiCoxSum$conf.int[,"lower .95"],
+    HR.95H=multiCoxSum$conf.int[,"upper .95"],
+    pvalue=multiCoxSum$coefficients[,"Pr(>|z|)"])
+  
+  out_multi <- as.data.frame(cbind(id=row.names(out_multi),out_multi)) 
+  
+  omulti<-filter(out_multi,pvalue<0.05)
+  
