@@ -1,0 +1,115 @@
+setwd('D:\\prrc\\TCGA\\GDC\\mutation\\lnc\\survival')
+library(DESeq2)
+library(tidyverse)
+
+rt=read.table("symbol.txt",header=T,sep="\t",check.names=F)  
+rt2<-rt[,!grepl("-11A-", colnames(rt))]
+rt2<-rt2[,!grepl("-11B-", colnames(rt2))]
+clus<-read.table('cluster.txt',sep = '\t')
+colnames(rt2)<-substr(colnames(rt2),1,12)
+clus$V1<-substr(clus$V1,1,12)
+r3<-intersect(clus$V1,colnames(rt2))
+
+clus1<-filter(clus,V1%in%r3)
+
+rt3<-select(rt2,c(1,r3))
+library(limma)
+library(pheatmap)
+fdrFilter=0.05        #fdr临界值
+logFCfilter=1         #logFC临界值
+conNum=124             #低突变组(GS)样品数目
+treatNum=127          #高突变组(GS)样品数目
+
+
+outTab=data.frame()
+grade=c(rep(1,conNum),rep(2,treatNum))
+rt<-rt3
+rt=as.matrix(rt)
+rownames(rt)=rt[,1]
+exp=rt[,2:ncol(rt)]
+dimnames=list(rownames(exp),colnames(exp))
+data=matrix(as.numeric(as.matrix(exp)),nrow=nrow(exp),dimnames=dimnames)
+data=avereps(data)
+data=data[rowMeans(data)>0.4,]
+
+#差异分析
+for(i in row.names(data)){
+  lncName=unlist(strsplit(i,"\\|",))[1]
+  lncName=gsub("\\/", "_", lncName)
+  rt=rbind(expression=data[i,],grade=grade)
+  rt=as.matrix(t(rt))
+  wilcoxTest=wilcox.test(expression ~ grade, data=rt)
+  conLncMeans=mean(data[i,1:conNum])
+  treatLncMeans=mean(data[i,(conNum+1):ncol(data)])
+  logFC=log2(treatLncMeans)-log2(conLncMeans)  
+  pvalue=wilcoxTest$p.value
+  conMed=median(data[i,1:conNum])
+  treatMed=median(data[i,(conNum+1):ncol(data)])
+  diffMed=treatMed-conMed
+  if( ((logFC>0) & (diffMed>0)) | ((logFC<0) & (diffMed<0)) ){  
+    outTab=rbind(outTab,cbind(lnc=i,conMean=conLncMeans,treatMean=treatLncMeans,logFC=logFC,pValue=pvalue))
+  }
+}
+pValue=outTab[,"pValue"]
+fdr=p.adjust(as.numeric(as.vector(pValue)), method="fdr")
+outTab=cbind(outTab,fdr=fdr)
+
+exprSet <-data
+batch_cor <- function(gene){
+  y <- as.numeric(exprSet[gene,])
+  rownames <- rownames(exprSet)
+  do.call(rbind,future_lapply(rownames, function(x){
+    dd  <- cor.test(as.numeric(exprSet[x,]),y,type="spearman")
+    data.frame(gene=gene,mRNAs=x,cor=dd$estimate,p.value=dd$p.value )
+  }))
+}
+
+
+library(future.apply)
+plan(multiprocess)
+system.time(dd <- batch_cor("FGF14-AS2"))
+gene <- dd$mRNAs
+## 转换
+library(clusterProfiler)
+gene = bitr(gene, fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+## 去重
+gene <- dplyr::distinct(gene,SYMBOL,.keep_all=TRUE)
+
+gene_df <- data.frame(logFC=dd$cor,
+                      SYMBOL = dd$mRNAs)
+gene_df <- merge(gene_df,gene,by="SYMBOL")
+
+## geneList 三部曲
+## 1.获取基因logFC
+geneList <- gene_df$logFC
+## 2.命名
+names(geneList) = gene_df$ENTREZID
+## 3.排序很重要
+geneList = sort(geneList, decreasing = TRUE)
+library(clusterProfiler)
+## 读入hallmarks gene set，从哪来？
+hallmarks <- read.gmt("h.all.v7.4.entrez.gmt")
+# 需要网络
+y <- GSEA(geneList,TERM2GENE =hallmarks)
+
+library(ggplot2)
+dotplot(y,showCategory=12,split=".sign")+facet_grid(~.sign)
+
+
+yd <- data.frame(y)
+library(enrichplot)
+paths <- c("HALLMARK_E2F_TARGETS", "HALLMARK_G2M_CHECKPOINT", "HALLMARK_MTORC1_SIGNALING", "HALLMARK_MYC_TARGETS_V1")#选取你需要展示的通路ID
+gseaplot2(y,"HALLMARK_E2F_TARGETS",color = "red",pvalue_table = T)
+
+
+gseaplot2(
+  y, #gseaResult object，即GSEA结果
+  paths,#富集的ID编号
+  title = "FGF14-AS2", #标题
+  color = "green",#GSEA线条颜色
+  base_size = 11,#基础字体大小
+  rel_heights = c(1.5, 0.5, 1),#副图的相对高度
+  subplots = 1:3, #要显示哪些副图 如subplots=c(1,3) #只要第一和第三个图，subplots=1#只要第一个图
+  pvalue_table = FALSE, #是否添加 pvalue table
+  ES_geom = "line" #running enrichment score用先还是用点ES_geom = "dot"
+)
