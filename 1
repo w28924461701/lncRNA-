@@ -70,3 +70,22 @@ splots[[1]]<-ggsurvplot(fit,
 res<-arrange_ggsurvplots(splots, print = F,
                          ncol = 1, nrow = 1, risk.table.height = 0.25)
 ggsave(paste(names(dd)[i],"All_surv.pdf",sep = "_"), res,width=7,height = 6)
+
+
+
+
+
+setwd('D:\\prrc\\TCGA\\GDC\\mutation\\lnc\\survival')
+library(DESeq2)
+library(tidyverse)
+
+ rt=read.table("symbol.txt",header=T,sep="\t",check.names=F)  
+ rt2<-rt[,!grepl("-11A-", colnames(rt))]
+ rt2<-rt2[,!grepl("-11B-", colnames(rt2))]
+ clus<-read.table('cluster.txt',sep = '\t')
+ colnames(rt2)<-substr(colnames(rt2),1,12)
+ clus$V1<-substr(clus$V1,1,12)
+ r3<-intersect(clus$V1,colnames(rt2))
+ clus1<-filter(clus,V1 %in% r3)
+ View(clus1)
+ rt3<-select(rt2,c(1,r3))
