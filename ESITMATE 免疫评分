@@ -1,0 +1,30 @@
+library(estimate)
+estimate <- function(dat,pro){
+  input.f=paste0(pro,'_estimate_input.txt')
+  output.f=paste0(pro,'_estimate_gene.gct')
+  output.ds=paste0(pro,'_estimate_score.gct')
+  write.table(dat,file = input.f,sep = '\t',quote = F)
+  library(estimate)
+  filterCommonGenes(input.f=input.f,
+                    output.f=output.f ,
+                    id="GeneSymbol")
+  estimateScore(input.ds = output.f,
+                output.ds=output.ds,
+                platform="illumina")   ## 注意platform
+  scores=read.table(output.ds,skip = 2,header = T)
+  rownames(scores)=scores[,1]
+  scores=t(scores[,3:ncol(scores)])
+  return(scores)
+}
+pro='PRCC'
+
+#data<-read.table('data.txt',sep = '\t',check.names = F)
+data[1:5,1:5]
+scores2=estimate(data,pro)
+head(scores2)
+TumorPurity = cos(0.6049872018+0.0001467884 * scores2[,3])
+
+scores=scores2
+scores<-as.data.frame(scores)
+
+scores%>%mutate(Purity=TumorPurity)->scores
