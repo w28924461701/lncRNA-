@@ -1,0 +1,7 @@
+library(readr)
+rt<-read_tsv('exp_seq.tsv')
+rt1<-select(rt,c('icgc_donor_id','gene_id','normalized_read_count'))
+rt1%>%
+    group_by(icgc_donor_id) %>% 
+    mutate(id=1:n()) %>%
+    spread(icgc_donor_id,normalized_read_count)->rt2
