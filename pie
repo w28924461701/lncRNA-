@@ -1,0 +1,1 @@
+pie(rt2$r2,edges = 200, radius = 0.8,angle = 45,main ="SMARCA4 mutation type in TCGA",labels = paste( rt2$id, sep = " ",  rt2$r2/sum( rt2$r2), "%"))
