@@ -1,0 +1,30 @@
+# 批量改文件名
+old.file.names <- dir() 
+new.file.names <- sapply(old.file.names,function(file){
+  
+  # 新的命名规则，下例为所有文件统一加后缀，本部分可根据具体情况修改（修改这里）
+  file <- gsub("tsv", "txt", file)
+  
+  return (file)
+})
+
+# 执行批量命名操作
+file.rename(old.file.names,new.file.names)
+
+#批量基因名转换
+
+
+file1.names<-dir(pattern='*.txt') 
+
+for(i in 1:length(file1.names)){
+rt<-read.table(file1.names[i],header = T,sep='\t',check.names = F)
+rt$Ensembl_ID<-substr(rt$Ensembl_ID,1,15)
+K<-intersect(rt$Ensembl_ID,gtf_data1$gene_id)
+rt1<-filter(rt,Ensembl_ID %in% K)
+L<-filter(gtf_data1,gene_id %in% K)
+L<-distinct(L,gene_id, .keep_all = T)
+rt2<-inner_join(rt1,L,by=c('Ensembl_ID'='gene_id'))
+rt2$Ensembl_ID<-NULL
+write.csv(rt2,file=paste0(substr(i,1,8),".csv"))
+rm(rt1,rt2,L)
+  }
