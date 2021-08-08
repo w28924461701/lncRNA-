@@ -1,3 +1,7 @@
+library(survival)
+library(survminer)
+library(dplyr)
+setwd("H:\\BaiduNetdiskDownload\\pan-cancer\\panCancer\\08.survival")                     #设置工作目录
 rt=read.table("expTime.txt",header=T,sep="\t",check.names=F,row.names=1)       #读取输入文件
 rt$futime=rt$futime/365
 gene=colnames(rt)[3]
@@ -9,10 +13,16 @@ for(i in levels(as.factor(rt$CancerType))) {
  # group=ifelse(rt1[,gene]>median(rt1[,gene]),"high","low")
   
   rt1$group=case_when(rt1[,gene]<=unname(quantile(rt1[,gene],0.25))~ 'low',  
-                  rt1[,gene]>unname(quantile(rt1[,gene],0.25))&rt1[,gene]<unname(quantile(rt1[,gene],0.75))~'median',
-                  rt1[,gene]>=unname(quantile(rt1[,gene],0.75))~'high')
+                 rt1[,gene]>unname(quantile(rt1[,gene],0.25))&rt1[,gene]<unname(quantile(rt1[,gene],0.75))~'median',
+                rt1[,gene]>=unname(quantile(rt1[,gene],0.75))~'high')
+        rt1<-filter(rt1,!(group=='median'))
   
-  rt1<-filter(rt1,!(group=='median'))
+#  rt1<-filter(rt1,futime<10)
+  
+ # res.cut <- surv_cutpoint(rt1, time = "futime", event = "fustat",  variables = c("SMARCA4"))
+
+ # group=ifelse(rt1[,gene]> res.cut[["cutpoint"]][["cutpoint"]],"high","low")
+
   
   diff=survdiff(Surv(futime, fustat) ~group,data = rt1)
   pValue=1-pchisq(diff$chisq,df=1)
@@ -48,3 +58,4 @@ for(i in levels(as.factor(rt$CancerType))) {
     dev.off()
   }
 }
+
