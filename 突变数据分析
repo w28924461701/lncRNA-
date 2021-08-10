@@ -33,3 +33,84 @@ par(mar = c(3, 3, 0.5, 0.5))
 mafSurvival(filtered_maf, genes = 'NSD1', time = 'days_to_last_follow_up', Status = 'vital_status', isTCGA = TRUE)
 
 mafSurvGroup(filtered_maf, geneSet =  c('TP53','CDKN2A','NOTCH1','NSD1'),time="days_to_last_follow_up", Status="vital_status")
+
+
+#
+
+library(TCGAbiolinks)
+library(MultiAssayExperiment)
+library(maftools)
+library(dplyr)
+library(ComplexHeatmap)
+setwd('D:\\ESCA')
+
+maf <- GDCquery_Maf("ESCA", directory = "GDCdata", pipelines = "varscan2") %>% read.maf
+mafgene<-maf@data[which(maf@data$Hugo_Symbol%in% c('TP53')),]
+plotmafSummary(maf = maf, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE, titvRaw = T)
+oncostrip(maf =maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'))
+oncoplot(maf=maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), draw_titv=T)
+plotVaf(maf,genes = c('TP53','CDKN2A','NOTCH1','NSD1'),gene_fs =2,
+        axis_fs =2,
+        height = 10,
+        width = 10) 
+
+# pfam = pfamDomains(maf, AACol = 'Protein_Change',top = 10)
+somaticInteractions(maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), pvalue = c(0.05, 0.1))
+
+
+dgi = drugInteractions(maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1') ,fontSize = 1)
+OncogenicPathways(maf)
+
+maf@data$Tumor_Sample_Barcode<-substr(maf@data$Tumor_Sample_Barcode,1,12)
+maf@variants.per.sample$Tumor_Sample_Barcode<-substr(maf@variants.per.sample$Tumor_Sample_Barcode,1,12)
+maf@variant.type.summary$Tumor_Sample_Barcode<-substr(maf@variant.type.summary$Tumor_Sample_Barcode,1,12)
+maf@variant.classification.summary$Tumor_Sample_Barcode<-substr(maf@variant.classification.summary$Tumor_Sample_Barcode,1,12)
+maf@maf.silent$Tumor_Sample_Barcode<-substr(maf@maf.silent$Tumor_Sample_Barcode,1,12)
+maf@maf.silent$Matched_Norm_Sample_Barcode<-substr(maf@maf.silent$Matched_Norm_Sample_Barcode,1,12)
+maf@clinical.data$Tumor_Sample_Barcode<-substr(maf@clinical.data$Tumor_Sample_Barcode,1,12)
+
+
+oncoplot(maf=maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), draw_titv=T,clinicalData = clinical1, clinicalFeatures = 'primary_diagnosis', sortByAnnotation = TRUE)
+
+# r<-substr(mafgene$Tumor_Sample_Barcode,1,12)
+# mafgene$Tumor_Sample_Barcode<-r
+# mafgene1<-mafgene[,c(1,9,10,14,16,26,39,46)]
+Braf<-mafgene1[which(mafgene1$Hugo_Symbol=='BRAF'),]
+Nras<-mafgene1[which(mafgene1$Hugo_Symbol=='NRAS'),]
+Hras<-mafgene1[which(mafgene1$Hugo_Symbol=='HRAS'),]
+Kras<-mafgene1[which(mafgene1$Hugo_Symbol=='KRAS'),]
+PTEN<-mafgene1[which(mafgene1$Hugo_Symbol=='PTEN'),]
+PIK3CA<-mafgene1[which(mafgene1$Hugo_Symbol=='PIK3CA'),]
+TERT<-mafgene1[which(mafgene1$Hugo_Symbol=='TERT'),]
+
+clinical1$brafmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Braf$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$nrasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Nras$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$hrasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Hras$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$krasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Kras$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$ptenmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%PTEN$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$PIK3CAmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%PIK3CA$Tumor_Sample_Barcode,'mutation','wild')
+clinical1$TERTmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%TERT$Tumor_Sample_Barcode,'mutation','wild')
+
+
+write.csv(clinical1,'clincial1.csv')
+
+
+library("survminer")
+require("survival")
+clinical2<-clinical1
+clinical2$vital_status<-as.factor(clinical2$vital_status)
+for (i in c(15:20)){
+  clinical2[,i] <- as.factor(clinical2[,i])
+}
+
+
+fit<- survfit(Surv(days_to_last_follow_up, vital_status) ~ brafmutation, data = clinical2)
+
+ggsurvplot(fit, 
+           pval = TRUE, conf.int = TRUE,
+           risk.table = TRUE, # Add risk table
+           risk.table.col = "strata", # Change risk table color by groups
+           linetype = "strata", # Change line type by groups
+           ggtheme = theme_bw(), # Change ggplot2 theme
+           palette = c("#E7B800", "#2E9FDF"))
+
