@@ -72,24 +72,20 @@ maf@clinical.data$Tumor_Sample_Barcode<-substr(maf@clinical.data$Tumor_Sample_Ba
 
 oncoplot(maf=maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), draw_titv=T,clinicalData = clinical1, clinicalFeatures = 'primary_diagnosis', sortByAnnotation = TRUE)
 
-# r<-substr(mafgene$Tumor_Sample_Barcode,1,12)
-# mafgene$Tumor_Sample_Barcode<-r
-# mafgene1<-mafgene[,c(1,9,10,14,16,26,39,46)]
-Braf<-mafgene1[which(mafgene1$Hugo_Symbol=='BRAF'),]
-Nras<-mafgene1[which(mafgene1$Hugo_Symbol=='NRAS'),]
-Hras<-mafgene1[which(mafgene1$Hugo_Symbol=='HRAS'),]
-Kras<-mafgene1[which(mafgene1$Hugo_Symbol=='KRAS'),]
-PTEN<-mafgene1[which(mafgene1$Hugo_Symbol=='PTEN'),]
-PIK3CA<-mafgene1[which(mafgene1$Hugo_Symbol=='PIK3CA'),]
-TERT<-mafgene1[which(mafgene1$Hugo_Symbol=='TERT'),]
+ mafgene1<-ESCA.Adenocanos@data[ESCA.Adenocanos@data$Hugo_Symbol%in%c('TP53','CDKN2A','NOTCH1','NSD1'),]
 
-clinical1$brafmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Braf$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$nrasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Nras$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$hrasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Hras$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$krasmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%Kras$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$ptenmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%PTEN$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$PIK3CAmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%PIK3CA$Tumor_Sample_Barcode,'mutation','wild')
-clinical1$TERTmutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%TERT$Tumor_Sample_Barcode,'mutation','wild')
+TP53<-mafgene1[which(mafgene1$Hugo_Symbol=='TP53'),]
+CDKN2A<-mafgene1[which(mafgene1$Hugo_Symbol=='CDKN2A'),]
+NOTCH1<-mafgene1[which(mafgene1$Hugo_Symbol=='NOTCH1'),]
+NSD1<-mafgene1[which(mafgene1$Hugo_Symbol=='NSD1'),]
+
+clinical1<-tcga_clinical[,c(1,8,9,10,14,16,22,23,26,35,39,43,45,46,47,79)]
+
+
+  
+  clinical1$TP53mutation<-ifelse(clinical1$Tumor_Sample_Barcode%in%TP53$Tumor_Sample_Barcode,'mutation','wild')
+
+
 
 
 write.csv(clinical1,'clincial1.csv')
@@ -99,12 +95,13 @@ library("survminer")
 require("survival")
 clinical2<-clinical1
 clinical2$vital_status<-as.factor(clinical2$vital_status)
-for (i in c(15:20)){
+for (i in c(17:20)){
   clinical2[,i] <- as.factor(clinical2[,i])
 }
 
+clinical2$vital_status<-ifelse(clinical2$vital_status=='Dead',1,0)
 
-fit<- survfit(Surv(days_to_last_follow_up, vital_status) ~ brafmutation, data = clinical2)
+fit<- survfit(Surv(days_to_last_follow_up, vital_status) ~CDKN2Amutation, data = clinical2)
 
 ggsurvplot(fit, 
            pval = TRUE, conf.int = TRUE,
@@ -113,4 +110,5 @@ ggsurvplot(fit,
            linetype = "strata", # Change line type by groups
            ggtheme = theme_bw(), # Change ggplot2 theme
            palette = c("#E7B800", "#2E9FDF"))
+
 
