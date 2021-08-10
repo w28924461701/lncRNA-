@@ -1,5 +1,10 @@
 library(MAFDash)
 library(TCGAbiolinks)
+
+library(MultiAssayExperiment)
+library(maftools)
+library(dplyr)
+library(ComplexHeatmap)
 setwd('D:\\ESCA')
 tcga_code = "ESCA"    ## 
 caller = "mutect2"
@@ -32,7 +37,21 @@ par(mar = c(3, 3, 0.5, 0.5))
 
 mafSurvival(filtered_maf, genes = 'NSD1', time = 'days_to_last_follow_up', Status = 'vital_status', isTCGA = TRUE)
 
-mafSurvGroup(filtered_maf, geneSet =  c('TP53','CDKN2A','NOTCH1','NSD1'),time="days_to_last_follow_up", Status="vital_status")
+mafSurvGroup(filtered_maf, geneSet =  c('NOTCH1','NSD1'),time="days_to_last_follow_up", Status="vital_status")
+
+
+clin.female <- subset(tcga_clinical, gender=="female")$Tumor_Sample_Barcode
+clin.Adenocanos <-subset(tcga_clinical, primary_diagnosis=="Adenocarcinoma, NOS")$Tumor_Sample_Barcode
+clin.Squamousnos <-subset(tcga_clinical, primary_diagnosis=="Squamous cell carcinoma, NOS")$Tumor_Sample_Barcode
+
+ESCA.Adenocanos <- subsetMaf(filtered_maf, tsb=clin.Adenocanos, isTCGA=TRUE)
+ESCA.Squamousnos<- subsetMaf(filtered_maf, tsb=clin.Squamousnos, isTCGA=TRUE)
+
+comp <- mafCompare(m1=ESCA.Squamousnos, m2=ESCA.Adenocanos, m1Name="ESCA.Squamous cell carcinoma-nos", m2Name="Adenocarcinoma-NOS", minMut=5)
+
+forestPlot(mafCompareRes=comp, pVal=0.05, color=c("maroon", "royalblue"), geneFontSize=0.8)
+
+coOncoplot(m1=ESCA.Squamousnos, m2=ESCA.Adenocanos, m1Name="ESCA.Squamous cell carcinoma-nos", m2Name="Adenocarcinoma-NOS",  genes = c('TP53','CDKN2A','NOTCH1','NSD1'))
 
 
 #
