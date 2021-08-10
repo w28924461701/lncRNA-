@@ -1,0 +1,35 @@
+library(MAFDash)
+library(TCGAbiolinks)
+setwd('D:\\ESCA')
+tcga_code = "ESCA"    ## 
+caller = "mutect2"
+title_label = paste0("TCGA-",tcga_code)
+
+maf_file <- getMAFdataTCGA(tcga_code,variant_caller = caller)
+tcga_clinical <- TCGAbiolinks::GDCquery_clinic(project = paste0("TCGA-",tcga_code), type = "clinical")
+tcga_clinical$Tumor_Sample_Barcode <- tcga_clinical$submitter_id
+filtered_mafdata <- filterMAF(maf_file)
+filtered_maf <- read.maf(filtered_mafdata, clinicalData = tcga_clinical)
+annotation_colors <- getTCGAClinicalColors(ageRange = range(tcga_clinical$age_at_diagnosis, na.rm=T))
+custom_onco <- generateOncoPlot(filtered_maf, 
+                                add_clinical_annotations = names(annotation_colors), 
+                                clin_data_colors = annotation_colors)
+oncoplot(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), 
+         clinicalFeatures = c('primary_diagnosis','ajcc_clinical_stage','gender','vital_status'),  sortByAnnotation = TRUE,draw_titv=T)
+
+
+output <- somaticInteractions(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), pvalue=c(0.05, 0.01))
+write.table(output, file="somaticInteractions.tsv", quote=FALSE, row.names=FALSE, sep="\t")
+
+
+filtered_maf@clinical.data$vital_status<-as.factor(filtered_maf@clinical.data$vital_status)
+filtered_maf@clinical.data$days_to_last_follow_up<-as.numeric(filtered_maf@clinical.data$days_to_last_follow_up)
+
+filtered_maf@clinical.data$days_to_last_follow_up<-filtered_maf@clinical.data$days_to_last_follow_up/365
+
+par(mfrow = c(2, 2))
+par(mar = c(3, 3, 0.5, 0.5))
+
+mafSurvival(filtered_maf, genes = 'NSD1', time = 'days_to_last_follow_up', Status = 'vital_status', isTCGA = TRUE)
+
+mafSurvGroup(filtered_maf, geneSet =  c('TP53','CDKN2A','NOTCH1','NSD1'),time="days_to_last_follow_up", Status="vital_status")
