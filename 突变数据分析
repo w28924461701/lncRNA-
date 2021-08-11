@@ -53,8 +53,59 @@ forestPlot(mafCompareRes=comp, pVal=0.05, color=c("maroon", "royalblue"), geneFo
 
 coOncoplot(m1=ESCA.Squamousnos, m2=ESCA.Adenocanos, m1Name="ESCA.Squamous cell carcinoma-nos", m2Name="Adenocarcinoma-NOS",  genes = c('TP53','CDKN2A','NOTCH1','NSD1'))
 
+library(DOSE)
+library(org.Hs.eg.db)
+library(topGO)
+library(clusterProfiler)
+library(pathview)
 
-#
+genes = c('TP53','CDKN2A','NOTCH1','NSD1')
+
+test = bitr(genes, #数据集
+            fromType="SYMBOL", #输入为SYMBOL格式
+            toType="ENTREZID",  # 转为ENTERZID格式
+            OrgDb="org.Hs.eg.db") #人类 数据库
+head(test,4)
+
+
+egoall <- enrichGO(genes, OrgDb=org.Hs.eg.db, ont='ALL',
+                                   pAdjustMethod='BH', pvalueCutoff=0.05, 
+                                  qvalueCutoff=0.2, keyType='SYMBOL')
+
+dotplot(egoall,title="Enrichgo_dot")
+
+barplot(egoall, showCategory=20,title="EnrichmentGO")
+
+cnetplot(egoall,showCategory=3,node_label="all") 
+
+
+kk <- enrichKEGG(gene = test$ENTREZID,
+                 organism = 'hsa', #KEGG可以用organism = 'hsa'
+                 pvalueCutoff = 1)
+dotplot(kk,title="Enrichment KEGG_dot")
+hsa04750 <- pathview(gene.data = geneList,
+                     
+                     pathway.id = "hsa04750", #上述结果中的hsa04750通路
+                     
+                     species = "hsa",
+                     
+                     limit = list(gene=max(abs(geneList)), cpd=1))
+
+
+
+p <- pathview(genes, pathway.id = "hsa01522", species = "hsa"
+              , kegg.native = T, same.layer = F)
+
+
+
+
+
+
+
+
+
+
+#  另类求突变生存方法代码
 
 library(TCGAbiolinks)
 library(MultiAssayExperiment)
