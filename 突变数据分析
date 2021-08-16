@@ -182,3 +182,8 @@ ggsurvplot(fit,
            palette = c("#E7B800", "#2E9FDF"))
 
 
+
+pdf(file="食管癌总.pdf",width=15.5,height=12)
+oncoplot(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), 
+         clinicalFeatures = c('primary_diagnosis','ajcc_clinical_stage','gender','vital_status'),  sortByAnnotation = TRUE,draw_titv=T)
+dev.off()
