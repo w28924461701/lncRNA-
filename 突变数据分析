@@ -21,7 +21,10 @@ custom_onco <- generateOncoPlot(filtered_maf,
                                 clin_data_colors = annotation_colors)
 oncoplot(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), 
          clinicalFeatures = c('primary_diagnosis','ajcc_clinical_stage','gender','vital_status'),  sortByAnnotation = TRUE,draw_titv=T)
-
+pdf(file="食管癌总.pdf",width=15.5,height=12)
+oncoplot(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), 
+         clinicalFeatures = c('primary_diagnosis','ajcc_clinical_stage','gender','vital_status'),  sortByAnnotation = TRUE,draw_titv=T)
+dev.off()
 
 output <- somaticInteractions(filtered_maf, genes = c('TP53','CDKN2A','NOTCH1','NSD1'), pvalue=c(0.05, 0.01))
 write.table(output, file="somaticInteractions.tsv", quote=FALSE, row.names=FALSE, sep="\t")
