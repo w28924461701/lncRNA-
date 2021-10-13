@@ -1,0 +1,22 @@
+EnhancedVolcano(rt1,
+                lab = rt1$Gene,
+                x = 'log2 (H1975_KO / H1975_NC)',
+                y = 'Pvalue(H1975_KO / H1975_NC)',
+                title = 'H1975_KO versusH1975_NC',
+               pCutoff = 10e-32,
+                FCcutoff = 2,
+               )
+
+
+
+EnhancedVolcano(rt1,
+                lab = rt1$Gene,
+                x = 'log2 (HCC827_OE / HCC827_NC)',
+                y = 'Pvalue(HCC827_OE / H1975_KO)', 
+                title = 'HCC827_OE versus H1975_KO',
+               # pCutoff = 10e-32,
+              #  FCcutoff = 2,
+)
+
+
+library(EnhancedVolcano)
