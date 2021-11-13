@@ -1,0 +1,47 @@
+
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#BiocManager::install("limma")
+
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#BiocManager::install("sva")
+
+library(limma)
+library(sva)
+setwd("D:\\biowolf\\82metabolism\\10.intersect")
+
+#读取TCGA代谢基因表达文件,并对数据进行处理
+rt = read.table("tcgaMetabExp.txt",header=T,sep="\t",check.names=F)
+rt=as.matrix(rt)
+rownames(rt)=rt[,1]
+exp=rt[,2:ncol(rt)]
+dimnames=list(rownames(exp),colnames(exp))
+metab=matrix(as.numeric(as.matrix(exp)),nrow=nrow(exp),dimnames=dimnames)
+metab=avereps(metab)
+
+#读取geo基因表达文件,并对数据进行处理
+rt = read.table("geoMatrix.txt",header=T,sep="\t",check.names=F)
+rt=as.matrix(rt)
+rownames(rt)=rt[,1]
+exp=rt[,2:ncol(rt)]
+dimnames=list(rownames(exp),colnames(exp))
+geo=matrix(as.numeric(as.matrix(exp)),nrow=nrow(exp),dimnames=dimnames)
+geo=avereps(geo)
+geo=log2(geo+1)                       #需要修改，如果数值很大，去掉前面的#，如果数值很小，保留#
+
+#对基因取交集,分别输出交集基因在代谢矩阵和GEO矩阵的表达量
+sameGene=intersect(row.names(metab),row.names(geo))
+metabOut=metab[sameGene,]
+geoOut=geo[sameGene,]
+
+all=cbind(metabOut,geoOut)
+batchType=c(rep(1,ncol(metabOut)),rep(2,ncol(geoOut)))
+outTab=ComBat(all, batchType,par.prior=TRUE)
+metabOut=outTab[,colnames(metabOut)]
+metabOut=rbind(ID=colnames(metabOut),metabOut)
+write.table(metabOut,file="tcgaMetabExp.share.txt",sep="\t",quote=F,col.names=F)
+geoOut=outTab[,colnames(geoOut)]
+geoOut=rbind(ID=colnames(geoOut),geoOut)
+write.table(geoOut,file="geoMetabExp.share.txt",sep="\t",quote=F,col.names=F)
+
