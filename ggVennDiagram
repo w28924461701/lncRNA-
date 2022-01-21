@@ -1,0 +1,25 @@
+# install.packages("ggVennDiagram")
+library(ggVennDiagram)
+# install.packages("ggplot2")
+library(ggplot2)
+
+# List of items
+x <- list(A = 1:5, B = 2:7, C = 5:10)
+
+# Venn diagram with custom colors
+ggVennDiagram(x) + 
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") 
+
+
+# install.packages("ggVennDiagram")
+library(ggVennDiagram)
+
+# List of items
+x <- list(A = 1:5, B = 2:7, C = 5:10)
+
+# Venn diagram with custom category names
+ggVennDiagram(x, category.names = c("Group 1",
+                                    "Group 2",
+                                    "Group 3")) 
+ 
+ 
