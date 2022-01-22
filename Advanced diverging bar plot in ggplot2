@@ -1,0 +1,14 @@
+# install.packages("ggplot2")
+library(ggplot2)
+
+ggplot(df, aes(x = reorder(group, value), y = value)) +
+  geom_bar(stat = "identity",
+           show.legend = FALSE,
+           aes(fill = value),  # Background color
+           color = "gray30") + # Border color
+  xlab("Group") +
+  ylab("Value") +
+  scale_fill_gradient2(low = "#F4A460",
+                       mid = "aliceblue",
+                       high = "#6495ED") 
+ 
