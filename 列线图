@@ -1,0 +1,28 @@
+gene='CDC20'
+setwd('D:\\KIRC\\CDC20')
+rt<-read.csv('merge.csv')
+res.cut <- surv_cutpoint(rt, time = "month", event = "Event",  variables = c("CDC20"))
+group=ifelse(rt[,gene]> res.cut[["cutpoint"]][["cutpoint"]],"high","low")
+rt$CDC20group<-group
+
+for (i in c(5:10,14,17,23)){
+  rt[,i] <- as.factor(rt[,i])
+}
+
+f_cph <- cph(Surv(month,Event==1) ~ T+N+M+gender+Stage+CDC20,
+             x=T, y=T, surv=T,
+             data=rt)
+print(f_cph)
+
+ddist <- datadist(rt)
+options(datadist='ddist')
+med  <- Quantile(f_cph)
+surv <- Survival(f_cph) 
+
+plot(nomogram(f_cph, fun=list(function(x) surv(12, x),
+                              function(x) surv(12*3, x),
+                              function(x) surv(12*5, x)),
+              funlabel=c("1-year Survival Probability", 
+                         "3-year Survival Probability",
+                         "5-year Survival Probability"))
+)
