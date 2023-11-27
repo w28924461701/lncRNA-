@@ -20,3 +20,16 @@ for(i in which(ann2$Gene.Symbol %in% '---')){
 for(i in which(ann2$Gene.Symbol %in% '--- /// --- /// --- /// --- /// --- /// --- /// --- /// --- /// ---')){
   ann2[i,2]<-ann2[i,1]
 }
+
+
+
+Symbol<-strsplit(GPL96$Gene.Symbol, "///")
+
+sb=list()
+for(i in 1:22215) {
+  sb[i]=Symbol[[i]][1]
+  
+}
+Symbol=unlist(sb)
+
+GPL96$Gene.Symbol=Symbol
