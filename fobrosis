@@ -1,0 +1,150 @@
+Symbol<-strsplit(GPL96$Gene.Symbol, "///")
+
+sb=list()
+for(i in 1:22215) {
+  sb[i]=Symbol[[i]][1]
+  
+}
+Symbol=unlist(sb)
+
+GPL96$Gene.Symbol=Symbol
+
+rt1=rt['218963_s_at',]
+for(i in 1:ncol(rt1)){
+  
+ group[i]=case_when(rt1[,i]<=quantile(rt1,0.5)~ 'low',  
+           
+            rt1[,i]>=quantile(rt1[,i],0.5)~'high')
+  
+}
+
+group <- factor(group,levels = c("low","high"))
+table(group)
+library(easyTCGA)
+
+
+diff_res <- diff_analysis(exprset = rt
+                          , group = group
+                          , is_count = F
+)
+## log2 transform not needed
+## => Running limma
+## => Running wilcoxon test
+## => Analysis done.
+
+diff_limma1 <- diff_res$deg_limma
+library(clusterProfiler)
+
+gene_entrezid <- bitr(geneID = diff_limma$Gene.Symbol
+                      , fromType = "SYMBOL" # 从symbol
+                      , toType = "ENTREZID" # 转成ENTREZID
+                      , OrgDb = "org.Hs.eg.db"
+)
+
+
+head(gene_entrezid)
+
+gene_entrezid <- merge(gene_entrezid,diff_limma,by.x = "SYMBOL", by.y = "Gene.Symbol")
+genelist <- gene_entrezid$logFC
+names(genelist) <- gene_entrezid$ENTREZID
+genelist <- sort(genelist,decreasing = T)
+head(genelist)
+library(msigdbr)
+
+m_t2g <- msigdbr(species = "Homo sapiens", category = "C5") %>% 
+  dplyr::select(gs_name, entrez_gene)
+
+gsea_res <- GSEA(genelist, 
+                 TERM2GENE = m_t2g,
+                 minGSSize = 10,
+                 maxGSSize = 500,
+                 pvalueCutoff = 0.05,
+                 pAdjustMethod = "BH",
+                 seed = 456
+)
+library(enrichplot)
+library(ggplot2)
+
+ridgeplot(gsea_res,
+          showCategory = 20,
+          fill = "p.adjust", #填充色 "pvalue", "p.adjust", "qvalue" 
+          core_enrichment = TRUE,#是否只使用 core_enriched gene
+          label_format = 30,
+          orderBy = "NES",
+          decreasing = FALSE
+)+
+  theme(axis.text.y = element_text(size=8))
+
+ids <- gsea_res@result$ID[10:15]
+
+gseadist(gsea_res,
+         IDs = ids,
+         type="density" # boxplot
+)+
+  theme(legend.direction = "vertical")
+
+
+gsea_res_symbol <- setReadable(gsea_res,"org.Hs.eg.db","ENTREZID")
+tmp <- as.data.frame(gsea_res_symbol)
+head(tmp,2)
+p=gseaplot2(gsea_res,geneSetID = 1:6)
+p[[1]] <- p[[1]]+theme(legend.position = "top",legend.direction = "vertical")
+p
+
+if (pvalue_table) {
+  pd <- x[geneSetID, c("Description","pvalue", "p.adjust")]
+  # pd <- pd[order(pd[,1], decreasing=FALSE),]
+  rownames(pd) <- pd$Description
+  
+  pd <- pd[,-1]
+  # pd <- round(pd, 4)
+  for (i in seq_len(ncol(pd))) {
+    pd[, i] <- format(pd[, i], digits = 4)
+  }
+  tp <- tableGrob2(pd, p.res)
+  
+  p.res <- p.res + theme(legend.position = "none") +
+    annotation_custom(tp,
+                      xmin = quantile(p.res$data$x, .5),
+                      xmax = quantile(p.res$data$x, .95),
+                      ymin = quantile(p.res$data$runningScore, .75),
+                      ymax = quantile(p.res$data$runningScore, .9))
+}
+
+
+
+
+library(gridExtra)
+x <- gsea_res_symbol
+geneSetID <- 1:6
+# 提取NES，P值等信息
+pd <- x[geneSetID, c( "NES","pvalue", "p.adjust")]
+pd <- pd[order(rownames(pd), decreasing=FALSE),]
+for (i in seq_len(ncol(pd))) {pd[, i] <- format(pd[, i], digits = 6)}
+# 通过修改table的主题来修改表格细节
+tt <- ttheme_minimal(base_size = 10,
+                     core=list(#bg_params = list(fill = NA, col=NA),
+                       #fg_params=list(col=c("#F8766D","#00BA38","#619CFF","#73a0d8","#d0d873","#737ad8"))
+                     )
+)
+
+tp <- tableGrob(pd,rows = NULL,theme = tt)
+
+# 修改表格每个格子的宽度和高度
+#tp$widths <- unit(rep(1.2,ncol(tp)), "cm")
+tp$heights <- unit(rep(0.4,nrow(tp)),"cm") # cell height
+plot(tp)
+
+p <- gseaplot2(gsea_res, geneSetID = 1:6)
+p[[1]] <- p[[1]]+
+  annotation_custom(tp,
+                    xmin = 10000,
+                    xmax = 14000,
+                    ymin = 0.4,
+                    ymax = 0.8
+  )+
+  theme(plot.title = element_text(size = 5),
+        legend.position = "top",
+        legend.direction = "vertical"
+  )
+p
